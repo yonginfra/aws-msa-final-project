@@ -1,6 +1,6 @@
-# test2: 주문 복구·고객 이메일·비밀값·승인 배포
+# 주문 복구·고객 이메일·비밀값·승인 배포
 
-이 문서는 test2의 코드 변경과 적용 절차입니다. **test2 push는 테스트만 실행하며 AWS 게시·apply·실제 앱 배포는 하지 않습니다.** main은 기존 기준 버전입니다. 코드의 로컬 검사 결과와 실제 AWS 검증은 구분합니다.
+이 문서는 test2에서 구현한 코드 구성과 적용 절차입니다. **test2 push는 테스트만 실행합니다.** main에서는 테스트한 이미지를 게시하고 배포 변경 PR을 제안하며, 승인된 이미지 선언을 Argo CD가 반영합니다. Terraform apply와 실제 실행 결과는 별도 검증 기록으로 구분합니다.
 
 ## 반영 범위
 
@@ -34,7 +34,7 @@ PENDING → 상품 재고 확보 → 주문 스냅샷·이메일 저장 → CONF
 
 POST `/ordering-service/ordering/create`: 기존 productId/productCount와 `Idempotency-Key` 헤더. 응답은 숫자 대신 `{id,productId,quantity,status,productName,unitPrice}`입니다. ORDERED=201, 처리 중=202, FAILED=409입니다. 처리 중에는 같은 키로 재조회/재시도하거나 GET `/ordering-service/ordering/{id}`를 사용하세요.
 
-주문·상품 서비스의 주문 상태 컬럼은 Flyway V1으로 ENUM에서 VARCHAR(32)로 명시적으로 전환하고 기존 주문은 보존합니다. 전용 ordering_schema_history와 baseline-version=0을 사용합니다. 나머지 nullable 신규 필드와 새 테이블은 Hibernate update로 준비합니다. 상품 서비스의 기존 ddl-auto=none은 신규 예약 테이블 준비를 위해 update로 맞췄습니다. 데이터 초기화 스크립트는 없습니다. 실제 MySQL에서 기존 enum/DDL 변경과 이전 이미지 호환성은 적용 전 스냅샷·검증 DB에서 확인해야 합니다. 이전 앱 이미지의 무조건적인 호환성을 보장하지 않습니다.
+주문 서비스의 주문 상태 컬럼은 Flyway V1으로 ENUM에서 VARCHAR(32)로 명시적으로 전환하고 기존 주문은 보존합니다. 전용 ordering_schema_history와 baseline-version=0을 사용합니다. 나머지 nullable 신규 필드와 새 테이블은 Hibernate update로 준비합니다. 상품 서비스의 기존 ddl-auto=none은 신규 예약 테이블 준비를 위해 update로 맞췄습니다. 데이터 초기화 스크립트는 없습니다. 실제 MySQL에서 기존 enum/DDL 변경과 이전 이미지 호환성은 적용 전 스냅샷·검증 DB에서 확인해야 합니다. 이전 앱 이미지의 무조건적인 호환성을 보장하지 않습니다.
 
 ## 2. Outbox와 이메일
 
@@ -103,15 +103,15 @@ rollback 스크립트는 이전 이미지 존재를 확인하고 **현재 main�
 
 원격 state bucket과 기존 Route53 zone은 보존 자원입니다. init/migrate로 예전 state를 덮어쓰지 않습니다. 현재 test2 코드만 작업하려면 AWS apply와 Argo의 github_revision 변경을 하지 마세요.
 
-## 7. 검증 구분과 한계
+## 7. 코드 검사 범위와 한계
 
-### 이번 브랜치의 로컬 검증 결과
+### 코드 단계 검사
 
 | 검사 | 결과 |
 | --- | --- |
 | Java 회귀 검사 | 회원 11개·상품 6개·주문 11개·게이트웨이 6개 통과 |
 | 프런트엔드 | Node 테스트 7개 통과 |
-| 소비자·CI·운영 스크립트 | Python 테스트 18개 통과 |
+| 소비자·CI·운영 스크립트 | Python 테스트 19개 통과 |
 | 인프라 코드 | Terraform 3개 루트 validate, k8s mock test 1개, Helm 차트·워크플로 문법 검사 통과 |
 | 실제 MySQL 8.4.11 | 주문·상품 테스트 및 회원/상품/주문 서비스 간 HTTP 연동 확인 |
 | 기존 DB 업그레이드 | 기존 ENUM 상태를 VARCHAR로 변환하고 기존 주문 데이터 유지 확인 |
@@ -119,9 +119,9 @@ rollback 스크립트는 이전 이미지 존재를 확인하고 **현재 main�
 로컬 HTTP 연동에서는 중복 요청의 주문 번호 유지·재고 한 번 차감·Outbox 한 건 생성·다른 회원의 주문 조회 차단·내부 API 무단 호출 차단을 확인했습니다. 회원 서비스 중단 시 주문 FAILED와 재고 원복도 확인했습니다. 이 검사는 로컬 MySQL과 실제 앱 프로세스를 사용했으며 AWS SNS/SES 발송은 비활성화했습니다.
 
 - 로컬: Java 주문/재고/보상/Outbox·권한 테스트, Node 장바구니·대시보드, Python 소비자/배포·운영 테스트, Terraform validate·mock plan, Kustomize 렌더링.
-- 별도 AWS 검증 필요: 실제 RDS/Secrets Manager 회전·ESO 갱신, SES 인증/메일 수신, SQS DLQ/redrive, IAM 실제 거부, Argo 배포·GitHub 규칙 강제·배포 PR·실제 롤백.
+- 실환경 확인 항목: RDS/Secrets Manager 회전·ESO 갱신, SES 인증/메일 수신, SQS DLQ/redrive, IAM 거부, Argo 배포·GitHub 규칙·배포 PR·실제 롤백. 실행 여부와 결과는 별도 검증 기록에서 확인합니다.
 - H2의 테스트 결과를 MySQL 실환경의 enum 변경/락/DDL/다중 파드 전체 검증과 동일하게 보지 않습니다.
 - 자동 복구는 DB/서비스가 다시 사용 가능하고 lease/recovery worker가 실행되는 조건입니다. 장기 미복구 주문·FAILED Outbox에 대한 운영 개입이 필요할 수 있습니다.
 - 앱 롤백 전 API/DB 호환성을 검토해야 합니다. 특히 구버전 주문 API와 내부 토큰 도입 전 이미지를 섞어 배포하지 마세요.
 
-이 문서는 실제 apply 성공 보고서가 아닙니다. 이번 브랜치의 코드는 main 병합·환경 설정·실환경 검증 전입니다.
+이 문서는 구성과 절차 안내이며, 실제 apply 성공 보고서를 대신하지 않습니다. 검사 표는 코드 단계 결과이고 실환경 검증은 별도 기록으로 관리합니다.
