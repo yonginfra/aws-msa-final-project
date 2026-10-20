@@ -15,7 +15,7 @@ override_data {
   values = {
     outputs = {
       autoscaler_node_groups = {
-        az-a = { asg_name = "mock-final-az-a", min_size = 2, max_size = 2 }
+        az-a = { asg_name = "mock-final-az-a", min_size = 2, max_size = 3 }
         az-c = { asg_name = "mock-final-az-c", min_size = 2, max_size = 3 }
       }
       manage_db_password                = true
@@ -55,8 +55,8 @@ run "zonal_scheduling" {
     error_message = "CA must manage exactly the two zonal groups, excluding the legacy group."
   }
   assert {
-    condition     = sum([for group in yamldecode(helm_release.cluster_autoscaler.values[0]).autoscalingGroups : group.maxSize]) == 5
-    error_message = "New pool maximum must remain five nodes total."
+    condition     = sum([for group in yamldecode(helm_release.cluster_autoscaler.values[0]).autoscalingGroups : group.maxSize]) == 6
+    error_message = "Zonal pools must allow six nodes total for rollout headroom."
   }
   assert {
     condition     = yamldecode(helm_release.monitoring.values[1]).grafana.nodeSelector["final-node-pool"] == "az-c" && yamldecode(helm_release.monitoring.values[1]).prometheus.prometheusSpec.nodeSelector["final-node-pool"] == "az-c"

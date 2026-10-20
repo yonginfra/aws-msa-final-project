@@ -22,14 +22,14 @@ module "eks" {
   # 현재 환경 전환 중에는 tfvars에서 true, 이전 완료 후 false
   keep_legacy_node_group = var.keep_legacy_node_group
 
-  # 기본 4개, 전체 최대 5개: EBS 모니터링이 있는 2c에 확장 여유 제공
+  # 기본 4개, 전체 최대 6개: 모니터링과 ESO를 포함한 운영 파드 외에 교체 파드 공간 확보
   node_pools = {
     az-a = {
       availability_zone = "ap-northeast-2a"
       subnet_id         = module.network.private_subnet_ids[index(var.availability_zones, "ap-northeast-2a")]
       desired_size      = 2
       min_size          = 2
-      max_size          = 2
+      max_size          = 3
     }
     az-c = {
       availability_zone = "ap-northeast-2c"
