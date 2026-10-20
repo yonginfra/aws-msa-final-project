@@ -1,0 +1,33 @@
+{
+  "runId": "local-validation-20261020",
+  "images": {
+    "apigateway": {
+      "digest": "sha256:2f16cc52409c7ae1449dfb453c3c62b9f708008bc9d8c4bbea5b9a9c113e82f7",
+      "source": "188b38d2685201c58ca1328217b5c4579d129bc5"
+    },
+    "frontend": {
+      "digest": "sha256:c5816a58db7f0811c38837dc381386a451f9663f481c236907df85d93c968eb0",
+      "source": "188b38d2685201c58ca1328217b5c4579d129bc5"
+    },
+    "member": {
+      "digest": "sha256:1dd84448928db23435a7a385718231675a8af119120e21393c9397805ec1567d",
+      "source": "188b38d2685201c58ca1328217b5c4579d129bc5"
+    },
+    "product": {
+      "digest": "sha256:e484104ceee985743227eb96704eee6c2418abb6e120d2cfe699140fa4d2b1d5",
+      "source": "188b38d2685201c58ca1328217b5c4579d129bc5"
+    },
+    "ordering": {
+      "digest": "sha256:a7d8edaea3372b6def32c8062d97a449b844ffe4ef9e52122b46ed70da865ba2",
+      "source": "188b38d2685201c58ca1328217b5c4579d129bc5"
+    }
+  },
+  "intent": "release",
+  "updatedServices": [
+    "member",
+    "product",
+    "ordering",
+    "apigateway",
+    "frontend"
+  ]
+}
