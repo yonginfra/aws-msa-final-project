@@ -1,29 +1,33 @@
 {
-  "runId": "local-validation-20261020",
+  "runId": "39364085515",
   "images": {
     "apigateway": {
-      "digest": "sha256:2f16cc52409c7ae1449dfb453c3c62b9f708008bc9d8c4bbea5b9a9c113e82f7",
-      "source": "188b38d2685201c58ca1328217b5c4579d129bc5"
+      "source": "ed4ea44c7853874bc700cdfa1e74a419460a4543",
+      "digest": "sha256:8fcf67c0a2b38c12573d6c15fca526f5fda8407ee0cf91b207226032c6dd1641"
     },
     "frontend": {
-      "digest": "sha256:4865ea65b7d77d2e82f0e3406e20bfaef14c4e36653e0b38608d84eef332a758",
-      "source": "0eccb6c4c8c258041c1cf47f6d4f12e969cb65d8"
+      "source": "ed4ea44c7853874bc700cdfa1e74a419460a4543",
+      "digest": "sha256:352bd8037eb2c4e833e3dd47094f45aed0a0a54090c6269f9cfc72f60960a5c9"
     },
     "member": {
-      "digest": "sha256:1dd84448928db23435a7a385718231675a8af119120e21393c9397805ec1567d",
-      "source": "188b38d2685201c58ca1328217b5c4579d129bc5"
+      "source": "ed4ea44c7853874bc700cdfa1e74a419460a4543",
+      "digest": "sha256:b684057e38efed7c81bdeba5bc8a6d6bdedde5be8a7030e7863fdc0b34dfa03c"
     },
     "product": {
-      "digest": "sha256:e484104ceee985743227eb96704eee6c2418abb6e120d2cfe699140fa4d2b1d5",
-      "source": "188b38d2685201c58ca1328217b5c4579d129bc5"
+      "source": "ed4ea44c7853874bc700cdfa1e74a419460a4543",
+      "digest": "sha256:3bd2f0e414fed7e50d57cae7cdcf531f7fc3ecb7694d1cb80d1c6d8b9af9caf3"
     },
     "ordering": {
-      "digest": "sha256:a7d8edaea3372b6def32c8062d97a449b844ffe4ef9e52122b46ed70da865ba2",
-      "source": "188b38d2685201c58ca1328217b5c4579d129bc5"
+      "source": "ed4ea44c7853874bc700cdfa1e74a419460a4543",
+      "digest": "sha256:7023b5a2126b949d9092f6ade614907a7be4158f1f8d17ed6583c3d9dd785859"
     }
   },
   "intent": "release",
   "updatedServices": [
+    "member",
+    "product",
+    "ordering",
+    "apigateway",
     "frontend"
   ]
 }
