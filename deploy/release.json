@@ -6,8 +6,8 @@
       "source": "188b38d2685201c58ca1328217b5c4579d129bc5"
     },
     "frontend": {
-      "digest": "sha256:c5816a58db7f0811c38837dc381386a451f9663f481c236907df85d93c968eb0",
-      "source": "188b38d2685201c58ca1328217b5c4579d129bc5"
+      "digest": "sha256:4865ea65b7d77d2e82f0e3406e20bfaef14c4e36653e0b38608d84eef332a758",
+      "source": "0eccb6c4c8c258041c1cf47f6d4f12e969cb65d8"
     },
     "member": {
       "digest": "sha256:1dd84448928db23435a7a385718231675a8af119120e21393c9397805ec1567d",
@@ -24,10 +24,6 @@
   },
   "intent": "release",
   "updatedServices": [
-    "member",
-    "product",
-    "ordering",
-    "apigateway",
     "frontend"
   ]
 }
