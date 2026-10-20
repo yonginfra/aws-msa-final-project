@@ -1,6 +1,9 @@
 """AWS 없이 메시지 실패·중복·배포 digest·준비 상태를 검증합니다."""
 import importlib.util
+import contextlib
+import io
 import json
+import re
 from pathlib import Path
 import sys
 import unittest
@@ -25,6 +28,15 @@ def event():
     return {'schemaVersion':1,'eventType':'ORDER_CREATED','eventId':'12345678-1234-4234-8234-123456789abc','orderId':1,'memberId':7,'recipientEmail':'customer@example.com','productName':'shoe','quantity':2,'total':3000}
 def batch(data):return {'Records':[{'messageId':'message-1','body':json.dumps(data)}]}
 class DeliveryTests(unittest.TestCase):
+    def test_failure_logs_do_not_include_email_or_exception_body(self):
+        output=io.StringIO()
+        def fail(data):raise RuntimeError('private-sentinel customer@example.com')
+        with contextlib.redirect_stdout(output):
+            result=email.process(batch(event()),Store(),fail)
+        self.assertEqual(len(result['batchItemFailures']),1)
+        self.assertIn('order_email_retry',output.getvalue())
+        self.assertNotIn('private-sentinel',output.getvalue())
+        self.assertNotIn('customer@example.com',output.getvalue())
     def test_duplicate_event_is_not_sent_twice(self):
         store=Store();sent=[]
         self.assertEqual(email.process(batch(event()),store,sent.append)['batchItemFailures'],[])
@@ -57,7 +69,10 @@ class DeliveryTests(unittest.TestCase):
     def test_tag_update_does_not_keep_previous_digest(self):
         original=(ROOT/'app/msa/kustomization.yaml').read_text(encoding='utf-8')
         pinned=release.pin(original,'frontend','b'*40,'sha256:'+'a'*64)
-        self.assertNotIn('digest: ',release.update(pinned,['frontend'],'c'*40))
+        updated=release.update(pinned,['frontend'],'c'*40)
+        selected=re.search(r'/frontend-service\n((?:    [^\n]+\n?)*)',updated)[1]
+        self.assertNotIn('digest: ',selected)
+        self.assertEqual(updated.count('digest: '),pinned.count('digest: ')-1)
     def test_deployment_must_match_images_generation_and_replicas(self):
         expected=[{'metadata':{'name':'frontend-depl'},'spec':{'template':{'spec':{'containers':[{'image':'repo@sha256:good'}]}}}}]
         actual={'items':[{'metadata':{'name':'frontend-depl','generation':2},'spec':{'replicas':2,'template':{'spec':{'containers':[{'image':'repo@sha256:good'}]}}},'status':{'observedGeneration':2,'updatedReplicas':2,'availableReplicas':2,'replicas':2}}]}

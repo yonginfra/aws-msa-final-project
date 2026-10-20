@@ -41,10 +41,19 @@ def process(event, store, send, now=None):
             data = parse(record['body'])
             token = str(uuid.uuid4())
             if not store.claim(data['eventId'], token, now):
+                print(json.dumps({'event':'order_email_duplicate_skipped','eventId':data['eventId']}))
                 continue  # SENT인 이벤트만 성공 처리한다. 처리 중인 이벤트는 재시도한다.
-            send(data)
+            response = send(data)
             store.sent(data['eventId'], token)
-        except Exception:
+            print(json.dumps({'event':'order_email_accepted','eventId':data['eventId'],
+                'orderId':data['orderId'],'sesMessageId':response.get('MessageId') if isinstance(response,dict) else None}))
+        except Exception as failure:
+            # 예외 본문에는 수신 주소가 포함될 수 있어 종류와 안전한 AWS 오류 코드만 기록한다.
+            error_code = getattr(failure,'response',{}).get('Error',{}).get('Code','')
+            if not isinstance(error_code,str) or not re.fullmatch(r'[A-Za-z0-9_.-]{1,80}',error_code):
+                error_code = None
+            print(json.dumps({'event':'order_email_retry','eventId':data.get('eventId') if data else None,
+                'errorType':type(failure).__name__,'awsErrorCode':error_code}))
             # SES 수락 후 DB 완료 기록이 실패한 경우에도 중복 메일 가능성이 있다.
             # 이를 exactly-once로 표현하지 않는다.
             if data is not None and token is not None:
@@ -90,7 +99,7 @@ def handler(event, context):
     store = DynamoStore(boto3.resource('dynamodb', config=config).Table(os.environ['DEDUP_TABLE']))
     ses = boto3.client('sesv2', config=config)
     def send(data):
-        ses.send_email(FromEmailAddress=os.environ['SENDER_EMAIL'], Destination={'ToAddresses':[data['recipientEmail']]},
+        return ses.send_email(FromEmailAddress=os.environ['SENDER_EMAIL'], Destination={'ToAddresses':[data['recipientEmail']]},
             Content={'Simple':{'Subject':{'Data':f"주문 완료 안내 #{data['orderId']}",'Charset':'UTF-8'},
             'Body':{'Text':{'Data':f"주문번호: {data['orderId']}\n상품: {data['productName']}\n수량: {data['quantity']}\n금액: {data['total']}원",'Charset':'UTF-8'}}}})
     return process(event, store, send)

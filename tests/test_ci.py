@@ -1,6 +1,7 @@
 """선택 누락과 엉뚱한 이미지 태그 변경을 막는 회귀 테스트입니다."""
 import importlib.util
 from pathlib import Path
+import re
 import unittest
 
 def load(name):
@@ -34,9 +35,21 @@ class CiTests(unittest.TestCase):
 
     def test_update_only_selected_images(self):
         original = Path("app/msa/kustomization.yaml").read_text(encoding="utf-8")
-        updated = tags.update(original, ["member", "frontend"], "test-123")
-        self.assertEqual(updated.count("newTag: test-123"), 2)
-        self.assertEqual(sum(a != b for a, b in zip(original.splitlines(), updated.splitlines())), 2)
+        # 실제 배포 파일은 digest가 있을 수도 있다. 행 수/행 위치 대신 이미지별 보존을 검사한다.
+        def entries(text):
+            return dict(re.findall(r"(?m)^  - name: ([^\n]+)\n((?:    [^\n]+\n?)*)", text))
+        without_digests = re.sub(r"(?m)^    digest: [^\n]+\n?", "", original)
+        for source in (original, without_digests):
+            updated = tags.update(source, ["member", "frontend"], "test-123")
+            self.assertEqual(updated.count("newTag: test-123"), 2)
+            before, after = entries(source), entries(updated)
+            self.assertEqual(set(before), set(after))
+            for image in before:
+                if image.endswith(("/member-service", "/frontend-service")):
+                    self.assertIn("newTag: test-123", after[image])
+                    self.assertNotIn("digest:", after[image])
+                else:
+                    self.assertEqual(before[image], after[image])
         with self.assertRaises(ValueError):
             tags.update(original, ["member"], "bad/tag")
         with self.assertRaises(ValueError):
