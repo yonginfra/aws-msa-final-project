@@ -74,16 +74,18 @@ resource "aws_iam_role_policy" "order_email" {
   ] })
 }
 resource "aws_lambda_function" "order_email" {
-  count                          = local.email_configured ? 1 : 0
-  function_name                  = "${var.project_name}-order-email"
-  role                           = aws_iam_role.order_email[0].arn
-  runtime                        = "python3.13"
-  handler                        = "handler.handler"
-  filename                       = data.archive_file.order_email[0].output_path
-  source_code_hash               = data.archive_file.order_email[0].output_base64sha256
-  timeout                        = 20
-  memory_size                    = 128
-  reserved_concurrent_executions = 2
+  count            = local.email_configured ? 1 : 0
+  function_name    = "${var.project_name}-order-email"
+  role             = aws_iam_role.order_email[0].arn
+  runtime          = "python3.13"
+  handler          = "handler.handler"
+  filename         = data.archive_file.order_email[0].output_path
+  source_code_hash = data.archive_file.order_email[0].output_base64sha256
+  timeout          = 20
+  memory_size      = 128
+  # 소규모 계정(동시 실행 한도 10)에서도 예약 동시성의 최소 미예약 100 조건에 걸리지 않도록
+  # 함수 예약 대신 아래 SQS 이벤트 소스에서 동시 실행을 제한합니다.
+  reserved_concurrent_executions = -1
   environment {
     variables = {
       SENDER_EMAIL = var.customer_email_sender
@@ -99,6 +101,9 @@ resource "aws_lambda_event_source_mapping" "order_email" {
   enabled                 = var.customer_email_enabled
   batch_size              = 1
   function_response_types = ["ReportBatchItemFailures"]
+  scaling_config {
+    maximum_concurrency = 2
+  }
   lifecycle {
     precondition {
       condition     = !var.customer_email_enabled || local.email_configured
