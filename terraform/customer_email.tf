@@ -83,7 +83,7 @@ resource "aws_lambda_function" "order_email" {
   source_code_hash = data.archive_file.order_email[0].output_base64sha256
   timeout          = 20
   memory_size      = 128
-  # 소규모 계정(동시 실행 한도 10)에서도 예약 동시성의 최소 미예약 100 조건에 걸리지 않도록
+  # 소규모 계정에서도 예약 설정으로 계정의 최소 미예약 동시 실행 조건에 걸리지 않도록
   # 함수 예약 대신 아래 SQS 이벤트 소스에서 동시 실행을 제한합니다.
   reserved_concurrent_executions = -1
   environment {

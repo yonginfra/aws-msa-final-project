@@ -8,6 +8,7 @@ resource "helm_release" "external_secrets" {
   namespace        = "external-secrets"
   create_namespace = true
   wait             = true
+  atomic           = true
   timeout          = 600
   values = [yamlencode({
     installCRDs    = true
@@ -15,6 +16,9 @@ resource "helm_release" "external_secrets" {
     webhook        = { resources = { requests = { cpu = "10m", memory = "32Mi" }, limits = { cpu = "100m", memory = "128Mi" } } }
     certController = { resources = { requests = { cpu = "10m", memory = "32Mi" }, limits = { cpu = "100m", memory = "128Mi" } } }
   })]
+  # 처음 설치할 때 LB 컨트롤러의 Service 웹훅이 등록된 직후 아직 준비되지 않은
+  # 구간과 겹치면 ESO Service 생성이 실패하므로 컨트롤러 Ready 이후 시작합니다.
+  depends_on = [helm_release.load_balancer_controller]
 }
 resource "helm_release" "database_secret" {
   count     = data.terraform_remote_state.infra.outputs.manage_db_password ? 1 : 0
