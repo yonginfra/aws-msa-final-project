@@ -63,6 +63,12 @@ resource "helm_release" "cluster_autoscaler" {
       # 실습 비용을 고려해 CA 파드 한 개 실행
       replicaCount      = 1
       priorityClassName = "system-cluster-critical"
+      # 단일 CA를 갱신할 때 여분의 CA 파드까지 요구하면 포화 상태에서 갱신 자체가 막힙니다.
+      # 앱은 유지하고 CA 한 개를 먼저 교체하여 확장 범위 변경을 반영합니다.
+      updateStrategy = {
+        type          = "RollingUpdate"
+        rollingUpdate = { maxSurge = 0, maxUnavailable = 1 }
+      }
 
       extraArgs = {
         # 확장 판단 과정을 확인할 로그 수준
